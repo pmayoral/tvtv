@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Streaming App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-in {
+            animation: fadeIn 0.2s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // Canales organizados por países
+        const channels = [
+            // ESPAÑA
+            { 
+                id: 1, 
+                name: 'La 1', 
+                country: '🇪🇸 España',
+                category: 'Generalistas',
+                url: 'https://ztnr.rtve.es/ztnr/1688877.m3u8',
+                logo: 'https://pbs.twimg.com/profile_images/1921959108862709760/fe5Tqhlh_200x200.jpg'
+            },
+            { 
+                id: 2, 
+                name: 'La 2', 
+                country: '🇪🇸 España',
+                category: 'Generalistas',
+                url: 'https://ztnr.rtve.es/ztnr/1688885.m3u8',
+                logo: 'https://yt3.googleusercontent.com/ytc/AIdro_kqgHWySi5xprs1VFCNCX0IKNT8yXBLZC43JMoB8j0JUto=s200'
+            },
+            { 
+                id: 3, 
+                name: 'TRECE', 
+                country: '🇪🇸 España',
+                category: 'Generalistas',
+                url: 'https://live-edge-ff-1.cdn.enetres.net/091DB7AFBD77442B9BA2F141DCC182F5021/liveld/index.m3u8',
+                logo: 'https://graph.facebook.com/TRECEtves/picture?width=200&height=200'
+            },
+            { 
+                id: 4, 
+                name: 'El Toro TV', 
+                country: '🇪🇸 España',
+                category: 'Entretenimiento',
+                url: 'https://streaming-1.eltorotv.com/lb0/eltorotv-streaming-web/index.m3u8',
+                logo: 'https://graph.facebook.com/eltorotv.es/picture?width=200&height=200'
+            },
+            { 
+                id: 5, 
+                name: '24h', 
+                country: '🇪🇸 España',
+                category: 'Noticias',
+                url: 'https://ztnr.rtve.es/ztnr/1694255.m3u8',
+                logo: 'https://pbs.twimg.com/profile_images/1634293543987453954/mb1Rzmso_200x200.jpg'
+            },
+            { 
+                id: 6, 
+                name: '324', 
+                country: '🇪🇸 España',
+                category: 'Noticias',
+                url: 'https://directes-tv-int.3catdirectes.cat/live-content/canal324-hls/master.m3u8',
+                logo: 'https://graph.facebook.com/324cat/picture?width=200&height=200'
+            },
+            { 
+                id: 7, 
+                name: 'Negocios TV', 
+                country: '🇪🇸 España',
+                category: 'Economía',
+                url: 'https://streaming013.gestec-video.com/hls/negociostv.m3u8',
+                logo: 'https://pbs.twimg.com/profile_images/1321367703731523584/bNMmbetI_200x200.jpg'
+            },
+            { 
+                id: 8, 
+                name: 'Teledeporte', 
+                country: '🇪🇸 España',
+                category: 'Deportes',
+                url: 'https://ztnr.rtve.es/ztnr/1712295.m3u8',
+                logo: 'https://graph.facebook.com/teledeporteRTVE/picture?width=200&height=200'
+            },
+            { 
+                id: 9, 
+                name: 'Real Madrid TV', 
+                country: '🇪🇸 España',
+                category: 'Deportes',
+                url: 'https://rmtv.akamaized.net/hls/live/2043153/rmtv-es-web/master.m3u8',
+                logo: 'https://graph.facebook.com/RealMadrid/picture?width=200&height=200'
+            },
+            { 
+                id: 10, 
+                name: 'Clan', 
+                country: '🇪🇸 España',
+                category: 'Infantil',
+                url: 'https://ztnr.rtve.es/ztnr/5466990.m3u8',
+                logo: 'https://graph.facebook.com/clantve/picture?width=200&height=200'
+            },
+            { 
+                id: 11, 
+                name: 'Pequeradio TV', 
+                country: '🇪🇸 España',
+                category: 'Infantil',
+                url: 'https://canadaremar2.todostreaming.es/live/peque-pequetv.m3u8',
+                logo: 'https://graph.facebook.com/Pequeradio/picture?width=200&height=200'
+            },
+            { 
+                id: 12, 
+                name: 'Canal Sur', 
+                country: '🇪🇸 España',
+                category: 'Regional',
+                url: 'https://live-24-canalsur.interactvty.pro/9bb0f4edcb8946e79f5017ddca6c02b0/26af5488cda642ed2eddd27a6328c93b9c03e9181b9d0a825147a7d978e69202.m3u8',
+                logo: 'https://graph.facebook.com/canalsurradioytv/picture?width=200&height=200'
+            },
+            { 
+                id: 13, 
+                name: 'RNE Radio', 
+                country: '🇪🇸 España',
+                category: 'Radio',
+                url: 'https://ztnr.rtve.es/ztnr/6688753.m3u8',
+                logo: 'https://graph.facebook.com/radionacionalrne/picture?width=200&height=200'
+            },
+
+            // INTERNACIONAL - NOTICIAS
+            { 
+                id: 20, 
+                name: 'Euronews Español', 
+                country: '🌍 Internacional',
+                category: 'Noticias',
+                url: 'https://euronews-live-spa-es.fast.rakuten.tv/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6571/bitok/eyJzdGlkIjoiMDA0YjY0NTMtYjY2MC00ZTZkLTlkNzEtMTk3YTM3ZDZhZWIxIiwibWt0IjoiZXMiLCJjaCI6NjU3MSwicHRmIjoxfQ==/26034/euronews-es.m3u8',
+                logo: 'https://graph.facebook.com/es.euronews/picture?width=200&height=200'
+            },
+            { 
+                id: 21, 
+                name: 'France 24 Español', 
+                country: '🇫🇷 Francia',
+                category: 'Noticias',
+                url: 'https://static.france24.com/live/F24_ES_LO_HLS/live_web.m3u8',
+                logo: 'https://graph.facebook.com/France24.Espanol/picture?width=200&height=200'
+            },
+            { 
+                id: 22, 
+                name: 'France 24 English', 
+                country: '🇫🇷 Francia',
+                category: 'Noticias',
+                url: 'https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8',
+                logo: 'https://graph.facebook.com/france24/picture?width=200&height=200'
+            },
+            { 
+                id: 23, 
+                name: 'France 24 Français', 
+                country: '🇫🇷 Francia',
+                category: 'Noticias',
+                url: 'https://static.france24.com/live/F24_FR_LO_HLS/live_web.m3u8',
+                logo: 'https://graph.facebook.com/FRANCE24/picture?width=200&height=200'
+            },
+            { 
+                id: 24, 
+                name: 'TV5 Monde', 
+                country: '🇫🇷 Francia',
+                category: 'Internacional',
+                url: 'https://ott.tv5monde.com/Content/HLS/Live/channel(europe)/variant.m3u8',
+                logo: 'https://graph.facebook.com/TV5MONDE/picture?width=200&height=200'
+            },
+            { 
+                id: 25, 
+                name: 'Arte', 
+                country: '🇫🇷 Francia',
+                category: 'Cultural',
+                url: 'https://artesimulcast.akamaized.net/hls/live/2030993/artelive_fr/index.m3u8',
+                logo: 'https://graph.facebook.com/artetv/picture?width=200&height=200'
+            },
+            { 
+                id: 26, 
+                name: 'franceinfo', 
+                country: '🇫🇷 Francia',
+                category: 'Noticias',
+                url: 'https://stream.francetvinfo.fr/stream/franceinfo.m3u8',
+                logo: 'https://graph.facebook.com/franceinfo/picture?width=200&height=200'
+            },
+            { 
+                id: 27, 
+                name: 'BFM TV', 
+                country: '🇫🇷 Francia',
+                category: 'Noticias',
+                url: 'https://ncdn-live-bfm.pfd.sfr.net/shls/LIVE$BFM_TV/index.m3u8',
+                logo: 'https://graph.facebook.com/BFMTV/picture?width=200&height=200'
+            },
+            { 
+                id: 28, 
+                name: 'LCI', 
+                country: '🇫🇷 Francia',
+                category: 'Noticias',
+                url: 'https://lci-hls-live-ssl.tf1.fr/lci/1/hls/live_2328.m3u8',
+                logo: 'https://graph.facebook.com/LCI/picture?width=200&height=200'
+            },
+            { 
+                id: 29, 
+                name: 'RTBF La Une', 
+                country: '🇧🇪 Bélgica',
+                category: 'Generalistas',
+                url: 'https://rtbf-live.akamaized.net/hls/live/2017883/laune/master.m3u8',
+                logo: 'https://graph.facebook.com/RTBFLaUne/picture?width=200&height=200'
+            },
+            { 
+                id: 30, 
+                name: 'RTBF Tipik', 
+                country: '🇧🇪 Bélgica',
+                category: 'Entretenimiento',
+                url: 'https://rtbf-live.akamaized.net/hls/live/2017884/tipik/master.m3u8',
+                logo: 'https://graph.facebook.com/RTBFTipik/picture?width=200&height=200'
+            },
+            { 
+                id: 31, 
+                name: 'BX1', 
+                country: '🇧🇪 Bélgica',
+                category: 'Regional',
+                url: 'https://59959724487e3.streamlock.net/stream/live/playlist.m3u8',
+                logo: 'https://graph.facebook.com/BX1officiel/picture?width=200&height=200'
+            },
+            { 
+                id: 32, 
+                name: 'Télé MB', 
+                country: '🇧🇪 Bélgica',
+                category: 'Regional',
+                url: 'https://5a0b00d270652.streamlock.net/live/telemb/playlist.m3u8',
+                logo: 'https://graph.facebook.com/telemb/picture?width=200&height=200'
+            },
+            { 
+                id: 33, 
+                name: 'LN24', 
+                country: '🇧🇪 Bélgica',
+                category: 'Noticias',
+                url: 'https://live.cdn.ln24.be/out/v1/3879f576bc8941d8bd8d7d5d0e3dbb44/index.m3u8',
+                logo: 'https://graph.facebook.com/LN24/picture?width=200&height=200'
+            },
+            { 
+                id: 34, 
+                name: 'DW Español', 
+                country: '🇩🇪 Alemania',
+                category: 'Noticias',
+                url: 'https://dwamdstream104.akamaized.net/hls/live/2015530/dwstream104/index.m3u8',
+                logo: 'https://graph.facebook.com/dw.espanol/picture?width=200&height=200'
+            },
+            { 
+                id: 35, 
+                name: 'DW English', 
+                country: '🇩🇪 Alemania',
+                category: 'Noticias',
+                url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8',
+                logo: 'https://graph.facebook.com/DeutscheWelle/picture?width=200&height=200'
+            },
+            { 
+                id: 36, 
+                name: 'RT Español', 
+                country: '🇷🇺 Rusia',
+                category: 'Noticias',
+                url: 'https://rt-esp.rttv.com/live/rtesp/playlist.m3u8',
+                logo: 'https://graph.facebook.com/ActualidadRT/picture?width=200&height=200'
+            },
+            { 
+                id: 37, 
+                name: 'RT English', 
+                country: '🇷🇺 Rusia',
+                category: 'Noticias',
+                url: 'https://rt-glb.rttv.com/live/rtnews/playlist.m3u8',
+                logo: 'https://graph.facebook.com/RTnews/picture?width=200&height=200'
+            },
+            { 
+                id: 38, 
+                name: 'NHK World Japan', 
+                country: '🇯🇵 Japón',
+                category: 'Noticias',
+                url: 'https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index.m3u8',
+                logo: 'https://graph.facebook.com/nhkworld/picture?width=200&height=200'
+            },
+            { 
+                id: 39, 
+                name: 'CGTN Español', 
+                country: '🇨🇳 China',
+                category: 'Noticias',
+                url: 'https://livees.cgtn.com/1000e/prog_index.m3u8',
+                logo: 'https://graph.facebook.com/CGTNEspanol/picture?width=200&height=200'
+            },
+            { 
+                id: 45, 
+                name: 'Al Jazeera English', 
+                country: '🇶🇦 Qatar',
+                category: 'Noticias',
+                url: 'https://live-hls-web-aje.getaj.net/AJE/index.m3u8',
+                logo: 'https://graph.facebook.com/aljazeera/picture?width=200&height=200'
+            },
+            { 
+                id: 46, 
+                name: 'BBC News', 
+                country: '🇬🇧 Reino Unido',
+                category: 'Noticias',
+                url: 'https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8',
+                logo: 'https://graph.facebook.com/bbcnews/picture?width=200&height=200'
+            },
+
+            // ESTADOS UNIDOS
+            { 
+                id: 47, 
+                name: 'ABC News Live', 
+                country: '🇺🇸 Estados Unidos',
+                category: 'Noticias',
+                url: 'https://content.uplynk.com/channel/3324f2467c414329b3b0cc5cd987b6be.m3u8',
+                logo: 'https://graph.facebook.com/ABCNews/picture?width=200&height=200'
+            },
+            { 
+                id: 48, 
+                name: 'CBS News', 
+                country: '🇺🇸 Estados Unidos',
+                category: 'Noticias',
+                url: 'https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d562deeca/master.m3u8',
+                logo: 'https://graph.facebook.com/CBSNews/picture?width=200&height=200'
+            },
+            { 
+                id: 49, 
+                name: 'Bloomberg TV', 
+                country: '🇺🇸 Estados Unidos',
+                category: 'Economía',
+                url: 'https://bloomberg.com/media-manifest/streams/us.m3u8',
+                logo: 'https://graph.facebook.com/Bloomberg/picture?width=200&height=200'
+            },
+            { 
+                id: 50, 
+                name: 'NASA TV', 
+                country: '🇺🇸 Estados Unidos',
+                category: 'Educación',
+                url: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
+                logo: 'https://graph.facebook.com/NASA/picture?width=200&height=200'
+            },
+
+            // LATINOAMÉRICA
+            { 
+                id: 60, 
+                name: 'TV Pública', 
+                country: '🇦🇷 Argentina',
+                category: 'Generalistas',
+                url: 'https://cntv.ar/live/c6eds/TV_Publica_Digital/SA_Live_dash_enc_2A/TV_Publica_Digital.mpd',
+                logo: 'https://graph.facebook.com/tvpublica/picture?width=200&height=200'
+            },
+            { 
+                id: 61, 
+                name: 'Canal 13', 
+                country: '🇨🇱 Chile',
+                category: 'Generalistas',
+                url: 'https://unlimited1-cl-isp.dps.live/13/13.smil/playlist.m3u8',
+                logo: 'https://graph.facebook.com/canal13/picture?width=200&height=200'
+            },
+            { 
+                id: 62, 
+                name: 'TVN', 
+                country: '🇨🇱 Chile',
+                category: 'Generalistas',
+                url: 'https://marine2.miplay.cl/tvn/playlist.m3u8',
+                logo: 'https://graph.facebook.com/tvn/picture?width=200&height=200'
+            },
+            { 
+                id: 63, 
+                name: 'Señal Colombia', 
+                country: '🇨🇴 Colombia',
+                category: 'Cultural',
+                url: 'https://streaming.rtvc.gov.co/TV_Senal_Colombia_live/smil:live.smil/playlist.m3u8',
+                logo: 'https://graph.facebook.com/senalcolombia/picture?width=200&height=200'
+            },
+            { 
+                id: 64, 
+                name: 'Canal Institucional', 
+                country: '🇨🇴 Colombia',
+                category: 'Institucional',
+                url: 'https://streaming.rtvc.gov.co/TV_Canal_Institucional_live/smil:live.smil/playlist.m3u8',
+                logo: 'https://graph.facebook.com/canalInstitucional/picture?width=200&height=200'
+            },
+            { 
+                id: 65, 
+                name: 'TV Perú', 
+                country: '🇵🇪 Perú',
+                category: 'Generalistas',
+                url: 'https://cdnh76.iblups.com/hls/R9WtilpKKB.m3u8',
+                logo: 'https://graph.facebook.com/tvperu/picture?width=200&height=200'
+            },
+            { 
+                id: 66, 
+                name: 'Azteca Uno', 
+                country: '🇲🇽 México',
+                category: 'Generalistas',
+                url: 'https://mdstrm.com/live-stream-playlist/609b243156cca108312822a6.m3u8',
+                logo: 'https://graph.facebook.com/AztecaUno/picture?width=200&height=200'
+            },
+            { 
+                id: 67, 
+                name: 'Azteca 7', 
+                country: '🇲🇽 México',
+                category: 'Generalistas',
+                url: 'https://mdstrm.com/live-stream-playlist/609ad46a7a441137107d7a81.m3u8',
+                logo: 'https://graph.facebook.com/AztecaSiete/picture?width=200&height=200'
+            },
+            { 
+                id: 68, 
+                name: 'Canal Once', 
+                country: '🇲🇽 México',
+                category: 'Cultural',
+                url: 'https://vivo.canaloncelive.tv/alivepkgr3/ngrp:cepro_all/playlist.m3u8',
+                logo: 'https://graph.facebook.com/CanalOnceTV/picture?width=200&height=200'
+            },
+            { 
+                id: 69, 
+                name: 'TV UNAM', 
+                country: '🇲🇽 México',
+                category: 'Educación',
+                url: 'https://5ca3e84a76d30.streamlock.net/tvunam/videotvunam/playlist.m3u8',
+                logo: 'https://graph.facebook.com/tvunam/picture?width=200&height=200'
+            },
+
+            // ITALIA
+            { 
+                id: 70, 
+                name: 'Rai News 24', 
+                country: '🇮🇹 Italia',
+                category: 'Noticias',
+                url: 'https://rainews1-live.akamaized.net/hls/live/598326/rainews1/rainews1.m3u8',
+                logo: 'https://graph.facebook.com/rainews.it/picture?width=200&height=200'
+            },
+
+            // OTROS
+            { 
+                id: 80, 
+                name: 'Arirang TV', 
+                country: '🇰🇷 Corea del Sur',
+                category: 'Internacional',
+                url: 'https://amdlive-ch01-ctnd-com.akamaized.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8',
+                logo: 'https://graph.facebook.com/arirang/picture?width=200&height=200'
+            },
+            { 
+                id: 81, 
+                name: 'HispanTV', 
+                country: '🇮🇷 Irán',
+                category: 'Noticias',
+                url: 'https://cdnlive.presstv.ir/live/smil:live.smil/playlist.m3u8',
+                logo: 'https://graph.facebook.com/HispanTV/picture?width=200&height=200'
+            }
+        ];
+
+        const themes = {
+            cyberpunk: {
+                name: '🌃 Neon Cyberpunk',
+                colors: {
+                    bg: 'from-gray-900 via-purple-900 to-black',
+                    card: 'bg-black/80 backdrop-blur-xl border-2 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.3)]',
+                    cardHover: 'hover:border-cyan-400 hover:shadow-[0_0_40px_rgba(6,182,212,0.5)]',
+                    text: 'text-cyan-300',
+                    textSecondary: 'text-purple-300',
+                    button: 'bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500',
+                    accent: 'text-cyan-400',
+                    glow: 'shadow-[0_0_20px_rgba(236,72,153,0.5)]'
+                },
+                effects: 'animate-pulse'
+            },
+            glass: {
+                name: '💎 Glassmorphism',
+                colors: {
+                    bg: 'from-blue-400 via-purple-500 to-pink-500',
+                    card: 'bg-white/10 backdrop-blur-2xl border border-white/20 shadow-2xl',
+                    cardHover: 'hover:bg-white/20 hover:border-white/30',
+                    text: 'text-white',
+                    textSecondary: 'text-white/80',
+                    button: 'bg-white/20 backdrop-blur-xl hover:bg-white/30 border border-white/30',
+                    accent: 'text-pink-200',
+                    glow: 'shadow-[0_8px_32px_rgba(255,255,255,0.2)]'
+                },
+                effects: ''
+            },
+            dark: {
+                name: '🖤 Dark Minimalist',
+                colors: {
+                    bg: 'from-black to-gray-900',
+                    card: 'bg-gray-900 border border-green-500/30 shadow-xl',
+                    cardHover: 'hover:border-green-500 hover:bg-gray-800',
+                    text: 'text-white',
+                    textSecondary: 'text-gray-400',
+                    button: 'bg-green-500 hover:bg-green-400 text-black font-bold',
+                    accent: 'text-green-400',
+                    glow: 'shadow-[0_0_15px_rgba(34,197,94,0.3)]'
+                },
+                effects: ''
+            },
+            liquid: {
+                name: '🌊 Liquid Design',
+                colors: {
+                    bg: 'from-pink-300 via-purple-300 to-indigo-400',
+                    card: 'bg-white/40 backdrop-blur-lg rounded-[2rem] border-2 border-white/50 shadow-2xl',
+                    cardHover: 'hover:bg-white/50 hover:scale-105',
+                    text: 'text-purple-900',
+                    textSecondary: 'text-purple-700',
+                    button: 'bg-gradient-to-br from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 rounded-full',
+                    accent: 'text-pink-600',
+                    glow: 'shadow-[0_10px_50px_rgba(219,39,119,0.3)]'
+                },
+                effects: 'hover:rotate-1'
+            },
+            retro: {
+                name: '📺 Retro Y2K',
+                colors: {
+                    bg: 'from-indigo-600 via-purple-600 to-pink-600',
+                    card: 'bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-yellow-400 shadow-[0_0_20px_rgba(251,191,36,0.5)]',
+                    cardHover: 'hover:border-pink-400 hover:shadow-[0_0_30px_rgba(244,114,182,0.6)]',
+                    text: 'text-yellow-300',
+                    textSecondary: 'text-pink-300',
+                    button: 'bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 hover:scale-110',
+                    accent: 'text-yellow-400',
+                    glow: 'shadow-[0_0_25px_rgba(251,191,36,0.6)]'
+                },
+                effects: 'hover:skew-y-1'
+            }
+        };
+
+        // Estado de la aplicación
+        let state = {
+            currentTheme: 'dark',
+            selectedChannel: channels[0],
+            isPlaying: false,
+            sidebarOpen: true,
+            dropdownOpen: false,
+            hls: null,
+            needsLoad: true
+        };
+
+        // SVG Icons
+        const icons = {
+            tv: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>',
+            menu: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>',
+            x: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+            sparkles: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>',
+            radio: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M4.93 4.93a10 10 0 0 1 14.14 0"></path><path d="M4.93 19.07a10 10 0 0 0 14.14 0"></path><path d="M8.46 8.46a5 5 0 0 1 7.08 0"></path><path d="M8.46 15.54a5 5 0 0 0 7.08 0"></path></svg>',
+            play: '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'
+        };
+
+        // Funciones de utilidad
+        function getCountries() {
+            return [...new Set(channels.map(ch => ch.country))];
+        }
+
+        function toggleSidebar() {
+            state.sidebarOpen = !state.sidebarOpen;
+            render();
+        }
+
+        function toggleDropdown() {
+            state.dropdownOpen = !state.dropdownOpen;
+            render();
+        }
+
+        function changeChannel(channel) {
+            state.selectedChannel = channel;
+            state.isPlaying = false;
+            state.needsLoad = true;
+            render();
+        }
+
+        function changeTheme(themeKey) {
+            state.currentTheme = themeKey;
+            state.dropdownOpen = false;
+            render();
+        }
+
+        function loadChannel() {
+            const video = document.getElementById('videoPlayer');
+            if (!video) return;
+
+            // Destruir instancia anterior de HLS
+            if (state.hls) {
+                state.hls.destroy();
+                state.hls = null;
+            }
+
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                });
+                state.hls = hls;
+
+                hls.loadSource(state.selectedChannel.url);
+                hls.attachMedia(video);
+
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play().catch(e => console.log('Autoplay prevented'));
+                    state.isPlaying = true;
+                    updatePlayIcon();
+                });
+
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        console.error('HLS Error:', data);
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = state.selectedChannel.url;
+                video.play().catch(e => console.log('Autoplay prevented'));
+                state.isPlaying = true;
+                updatePlayIcon();
+            }
+        }
+
+        function updatePlayIcon() {
+            const playIcon = document.querySelector('.absolute.inset-0');
+            if (playIcon && state.isPlaying) {
+                playIcon.style.display = 'none';
+            }
+        }
+
+        function render() {
+            const theme = themes[state.currentTheme];
+            const countries = getCountries();
+
+            // Guardar posición del scroll del sidebar
+            const sidebar = document.querySelector('aside');
+            const scrollPosition = sidebar ? sidebar.scrollTop : 0;
+
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="min-h-screen bg-gradient-to-br ${theme.colors.bg} transition-all duration-700">
+                    <!-- Header -->
+                    <header class="${theme.colors.card} ${theme.colors.glow} transition-all duration-500 sticky top-0 z-50">
+                        <div class="container mx-auto px-4 py-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <button onclick="toggleSidebar()" class="${theme.colors.button} p-2 rounded-lg transition-all duration-300">
+                                        ${state.sidebarOpen ? icons.x : icons.menu}
+                                    </button>
+                                    <div class="${theme.colors.accent} ${theme.effects}">
+                                        ${icons.tv}
+                                    </div>
+                                    <h1 class="text-2xl font-bold ${theme.colors.text}">TV Streaming</h1>
+                                </div>
+
+                                <!-- Dropdown de Temas -->
+                                <div class="relative">
+                                    <button onclick="toggleDropdown()" class="${theme.colors.button} px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 font-semibold ${theme.effects}">
+                                        ${icons.sparkles}
+                                        <span>${theme.name}</span>
+                                        <svg class="w-4 h-4 transition-transform duration-300 ${state.dropdownOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    ${state.dropdownOpen ? `
+                                        <div class="absolute right-0 mt-2 w-72 ${theme.colors.card} rounded-2xl overflow-hidden ${theme.colors.glow} transition-all duration-300 transform origin-top animate-in">
+                                            ${Object.entries(themes).map(([key, t]) => `
+                                                <button onclick="changeTheme('${key}')" class="w-full px-6 py-4 text-left transition-all duration-300 flex items-center gap-3 border-b border-white/10 last:border-0 ${
+                                                    state.currentTheme === key 
+                                                        ? 'bg-white/20 font-bold' 
+                                                        : 'hover:bg-white/10'
+                                                }">
+                                                    <span class="text-2xl">${t.name.split(' ')[0]}</span>
+                                                    <span class="${theme.colors.text}">${t.name.split(' ').slice(1).join(' ')}</span>
+                                                </button>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="container mx-auto px-4 py-6">
+                        <div class="flex gap-6">
+                            <!-- Sidebar de Canales -->
+                            ${state.sidebarOpen ? `
+                                <aside class="w-80 ${theme.colors.card} rounded-2xl p-6 h-[calc(100vh-180px)] overflow-y-auto transition-all duration-500 ${theme.colors.glow}">
+                                    <h2 class="text-xl font-bold ${theme.colors.text} mb-4 flex items-center gap-2">
+                                        <div class="${theme.effects}">
+                                            ${icons.radio}
+                                        </div>
+                                        Canales por País
+                                    </h2>
+                                    
+                                    ${countries.map(country => `
+                                        <div class="mb-6">
+                                            <h3 class="text-sm font-semibold ${theme.colors.textSecondary} mb-2 uppercase tracking-wider">
+                                                ${country}
+                                            </h3>
+                                            <div class="space-y-2">
+                                                ${channels.filter(ch => ch.country === country).map(channel => `
+                                                    <button onclick="selectChannel(${channel.id})" class="w-full p-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${
+                                                        state.selectedChannel.id === channel.id
+                                                            ? `${theme.colors.button} ${theme.effects}`
+                                                            : `${theme.colors.card} ${theme.colors.cardHover}`
+                                                    }">
+                                                        <img src="${channel.logo}" alt="${channel.name}" class="w-10 h-10 rounded-lg object-cover" />
+                                                        <div class="flex flex-col items-start flex-1 min-w-0">
+                                                            <span class="font-medium ${theme.colors.text} truncate w-full">${channel.name}</span>
+                                                            <span class="text-xs ${theme.colors.textSecondary} truncate w-full">${channel.category}</span>
+                                                        </div>
+                                                    </button>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </aside>
+                            ` : ''}
+
+                            <!-- Reproductor Principal -->
+                            <main class="flex-1">
+                                <div class="${theme.colors.card} rounded-2xl overflow-hidden ${theme.colors.glow} transition-all duration-500">
+                                    <div class="aspect-video bg-black relative">
+                                        <video id="videoPlayer" controls class="w-full h-full" playsinline></video>
+                                        ${!state.isPlaying ? `
+                                            <div class="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                                                <div class="${theme.colors.accent} ${theme.effects}">
+                                                    ${icons.play}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                    
+                                    <div class="p-6">
+                                        <div class="flex items-center gap-4">
+                                            <img src="${state.selectedChannel.logo}" alt="${state.selectedChannel.name}" class="w-16 h-16 rounded-xl object-cover" />
+                                            <div>
+                                                <h2 class="text-2xl font-bold ${theme.colors.text}">${state.selectedChannel.name}</h2>
+                                                <p class="${theme.colors.textSecondary}">${state.selectedChannel.country} • ${state.selectedChannel.category} • En vivo</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Info Legal -->
+                                <div class="mt-6 ${theme.colors.card} rounded-xl p-4 text-center ${theme.colors.glow}">
+                                    <p class="text-sm ${theme.colors.textSecondary}">
+                                        🌍 Más de 80 canales internacionales de TV en streaming • 100% Legal y Gratuito
+                                    </p>
+                                    <p class="text-xs ${theme.colors.textSecondary} mt-2">
+                                        España, Francia 🇫🇷, Bélgica 🇧🇪, Latinoamérica y más • <a href="https://www.tdtchannels.com" target="_blank" rel="noopener noreferrer" class="${theme.colors.accent} font-semibold hover:underline">TDTChannels</a>
+                                    </p>
+                                </div>
+                            </main>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Restaurar posición del scroll del sidebar
+            if (state.sidebarOpen && scrollPosition > 0) {
+                setTimeout(() => {
+                    const newSidebar = document.querySelector('aside');
+                    if (newSidebar) {
+                        newSidebar.scrollTop = scrollPosition;
+                    }
+                }, 0);
+            }
+
+            // Cargar canal después del render solo si es necesario
+            if (state.needsLoad) {
+                state.needsLoad = false;
+                setTimeout(loadChannel, 100);
+            }
+        }
+
+        // Hacer funciones globales para los onclick
+        window.toggleSidebar = toggleSidebar;
+        window.toggleDropdown = toggleDropdown;
+        window.changeTheme = changeTheme;
+        window.selectChannel = function(channelId) {
+            const channel = channels.find(ch => ch.id === channelId);
+            if (channel) {
+                changeChannel(channel);
+            }
+        };
+
+        // Cerrar dropdown al hacer click fuera
+        document.addEventListener('click', function(e) {
+            if (state.dropdownOpen && !e.target.closest('.relative')) {
+                state.dropdownOpen = false;
+                render();
+            }
+        });
+
+        // Inicializar la aplicación
+        render();
+    </script>
+</body>
+</html>
